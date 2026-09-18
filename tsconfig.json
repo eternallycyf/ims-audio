@@ -21,8 +21,8 @@
     "paths": {
       "@@/*": [".dumi/tmp/*"],
       "@/*": ["./src"],
-      "ims-template": ["./src"],
-      "ims-template/*": ["./src/*"]
+      "ims-audio": ["./src"],
+      "ims-audio/*": ["./src/*"]
     }
   },
   "exclude": ["node_modules", "dist", "server"]

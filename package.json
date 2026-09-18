@@ -1,23 +1,25 @@
 {
-  "name": "ims-template",
-  "version": "1.7.2",
-  "description": "a online docs and npm package template",
+  "name": "ims-audio",
+  "version": "0.0.1",
+  "description": "Online piano",
   "keywords": [
-    "npm",
-    "template"
+    "audio",
+    "piano",
+    "utils"
   ],
-  "homepage": "https://github.com/eternallycyf/ims-template",
+  "homepage": "https://github.com/eternallycyf/ims-audio",
   "bugs": {
-    "url": "https://github.com/eternallycyf/ims-template/issues/new"
+    "url": "https://github.com/eternallycyf/ims-audio/issues/new"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/eternallycyf/ims-template.git"
+    "url": "https://github.com/eternallycyf/ims-audio.git"
   },
   "license": "MIT",
   "author": "eternallycyf(969475322@qq.com)",
   "sideEffects": [
-    "**/*.less"
+    "**/*.less",
+    "**/*.css"
   ],
   "main": "lib/index.js",
   "unpkg": "dist/index.js",
@@ -108,9 +110,12 @@
     "vitest": "^1.x"
   },
   "peerDependencies": {
-    "@ant-design/icons": "^5.2.6",
-    "antd": "^5.9.4",
-    "lodash": "^4.17.21"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "packageManager": "pnpm@10.16.1",
+  "engines": {
+    "node": "24.x"
   },
   "publishConfig": {
     "access": "public",

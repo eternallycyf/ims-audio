@@ -15,12 +15,12 @@ const themeConfig: SiteThemeConfig = {
   logo: isProd ? '/images/origin.png' : `/${repo}/images/origin.png`,
   hero: {
     'zh-CN': {
-      description: 'Ant Design Style 文档站主题包',
+      description: '在线钢琴',
       actions: [
         {
           type: 'primary',
           text: '开始使用',
-          link: '/guide',
+          link: '/components',
         },
         {
           text: 'Github',
@@ -28,29 +28,30 @@ const themeConfig: SiteThemeConfig = {
           openExternal: true,
         },
       ],
-      features: featuresZh,
+      // features: featuresZh,
     },
     'en-US': {
-      description: 'dumi2 theme similar to antd v5 website',
+      description: 'Online piano',
       actions: [
         {
           type: 'primary',
           text: 'Start',
-          link: '/guide-en',
+          link: '/components',
         },
         {
-          text: 'Config',
-          link: '/config-en',
+          text: 'Github',
+          link: 'https://github.com/eternallycyf/',
+          openExternal: true,
         },
       ],
     },
   },
   socialLinks: { github: homepage },
   apiHeader: {
-    sourceUrl: `https://github.com/eternallycyf/ims-template/tree/master/src/components/{atomId}/index.tsx`,
-    docUrl: `https://github.com/eternallycyf/ims-template/tree/master/src/components/{atomId}/index.md`,
-    pkg: 'ims-template',
-    match: ['/ims-template/src/component'],
+    sourceUrl: `https://github.com/eternallycyf/ims-audio/tree/master/src/components/{atomId}/index.tsx`,
+    docUrl: `https://github.com/eternallycyf/ims-audio/tree/master/src/components/{atomId}/index.md`,
+    pkg: 'ims-audio',
+    match: ['/ims-audio/src/component'],
   },
   footerConfig: {
     bottom: '2023',
