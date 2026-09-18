@@ -8,6 +8,8 @@
 
 在线钢琴
 
+产品灵感参考 [webpage-piano](https://github.com/yicheng-irun/webpage-piano)（GPL-3.0）；本仓库为原创 3D 贴图 UI + 曲目播放实现，详见 [ATTRIBUTION.md](./ATTRIBUTION.md)。
+
 node 版本 24.x（Vercel 文档站构建）
 
 [Changelog](./CHANGELOG.md) · [Report Bug][issues-url] · [Request Feature][issues-url]
@@ -89,6 +91,8 @@ pnpm i ims-audio -S
 
 Copyright © 2023 - present [eternallycyf][profile-url]. <br />
 This project is [MIT](./LICENSE) licensed.
+
+第三方致谢见 [ATTRIBUTION.md](./ATTRIBUTION.md)（含 [webpage-piano](https://github.com/yicheng-irun/webpage-piano) 灵感来源说明）。
 
 <!-- contributors -->
 

@@ -1,19 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  KEY_BY_CODE,
   KEY_BY_ID,
+  KEY_BY_KEYCODE,
   KEY_BY_MIDI,
   PIANO_KEYBOARD,
   midiToFreq,
+  resolveLyricAt,
+  scorePitches,
   type LyricLine,
   type ScoreNote,
   type SongTrack,
 } from './constants';
+import { createPianoSampler, type PianoSampler } from './soundfont';
 
 export type PlayHandler = (keyId: string) => void;
 
 export type LyricUpdate = {
   index: number;
+  /** 当前行内高亮字下标；-1 表示整行/无字（如 ♪） */
+  charIndex: number;
   current: LyricLine | null;
   prev: LyricLine | null;
   next: LyricLine | null;
@@ -37,8 +42,65 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
   const voicesRef = useRef<ActiveVoice[]>([]);
   const lyricCbRef = useRef<((u: LyricUpdate) => void) | undefined>();
   const lyricIndexRef = useRef(-1);
+  const lyricCharRef = useRef(-2);
   const playingRef = useRef(false);
   const playGenRef = useRef(0);
+  const samplerRef = useRef<PianoSampler | null>(null);
+
+  const [ready, setReady] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
+
+  useEffect(() => {
+    if (!context) return;
+    let cancelled = false;
+    samplerRef.current = null;
+    setReady(false);
+    setLoadProgress(0);
+
+    // 先中音可播，再补全 88 键 A0–C8（MIDI 21–108）
+    void (async () => {
+      const shared = new Map<number, AudioBuffer>();
+      const mid = await createPianoSampler(
+        context,
+        48,
+        84,
+        (loaded, total) => {
+          if (!cancelled) setLoadProgress(Math.round((loaded / total) * 50));
+        },
+        shared,
+      );
+      if (cancelled) {
+        mid.dispose();
+        return;
+      }
+      samplerRef.current = mid;
+      setReady(true);
+
+      const full = await createPianoSampler(
+        context,
+        21,
+        108,
+        (loaded, total) => {
+          if (!cancelled) setLoadProgress(50 + Math.round((loaded / total) * 50));
+        },
+        shared,
+      );
+      if (cancelled) {
+        full.dispose();
+        return;
+      }
+      samplerRef.current = full;
+      setLoadProgress(100);
+    })().catch(() => {
+      if (!cancelled) setReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+      samplerRef.current?.dispose();
+      samplerRef.current = null;
+    };
+  }, [context]);
 
   const silenceVoices = useCallback(() => {
     if (!context) return;
@@ -53,29 +115,36 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
       }
     });
     voicesRef.current = [];
+    samplerRef.current?.stopAll();
   }, [context]);
 
-  const emitLyric = useCallback((track: SongTrack | null, index: number) => {
-    lyricIndexRef.current = index;
-    if (!track) {
+  const emitLyric = useCallback(
+    (track: SongTrack | null, index: number, charIndex = -1) => {
+      lyricIndexRef.current = index;
+      lyricCharRef.current = charIndex;
+      if (!track) {
+        lyricCbRef.current?.({
+          index: -1,
+          charIndex: -1,
+          current: null,
+          prev: null,
+          next: null,
+          track: null,
+        });
+        return;
+      }
+      const lines = track.lyrics;
       lyricCbRef.current?.({
-        index: -1,
-        current: null,
-        prev: null,
-        next: null,
-        track: null,
+        index,
+        charIndex,
+        current: lines[index] ?? null,
+        prev: index > 0 ? lines[index - 1] : null,
+        next: index < lines.length - 1 ? lines[index + 1] : null,
+        track,
       });
-      return;
-    }
-    const lines = track.lyrics;
-    lyricCbRef.current?.({
-      index,
-      current: lines[index] ?? null,
-      prev: index > 0 ? lines[index - 1] : null,
-      next: index < lines.length - 1 ? lines[index + 1] : null,
-      track,
-    });
-  }, []);
+    },
+    [],
+  );
 
   const stopMusic = useCallback(() => {
     playGenRef.current += 1;
@@ -87,32 +156,31 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
       rafRef.current = 0;
     }
     silenceVoices();
-    emitLyric(null, -1);
+    emitLyric(null, -1, -1);
   }, [emitLyric, silenceVoices]);
 
-  /** 在 AudioContext 绝对时间 when 处发声；when≈now 时立即播 */
-  const playMidiAt = useCallback(
-    (midi: number, when?: number) => {
+  const playOscAt = useCallback(
+    (midi: number, when: number, durationSec: number, gainScale = 1) => {
       if (!context || midi <= 0) return;
-
-      const t = when ?? context.currentTime;
-      const delayMs = Math.max(0, (t - context.currentTime) * 1000);
       const freq = midiToFreq(midi);
-      const decay = Math.min(1.35, Math.max(0.55, 1.15 - (midi - 48) * 0.012));
-
+      const press = Math.max(0.08, durationSec);
+      const release = Math.min(2.4, Math.max(0.9, 1.5 + (60 - midi) * 0.02));
       const master = context.createGain();
       master.connect(context.destination);
-      master.gain.setValueAtTime(0, t);
-      master.gain.linearRampToValueAtTime(0.55, t + 0.008);
-      master.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+      const peak = 0.42 * gainScale;
+      master.gain.setValueAtTime(0.0001, when);
+      master.gain.exponentialRampToValueAtTime(peak, when + 0.008);
+      master.gain.exponentialRampToValueAtTime(peak * 0.5, when + Math.min(0.3, press * 0.5));
+      master.gain.setValueAtTime(peak * 0.5, when + press);
+      master.gain.exponentialRampToValueAtTime(0.0001, when + press + release);
 
-      const partials: Array<[number, OscillatorType, number]> = [
-        [1, 'triangle', 1],
-        [2, 'sine', 0.18],
-        [3, 'sine', 0.06],
-      ];
-
-      partials.forEach(([mul, type, amp]) => {
+      (
+        [
+          [1, 'triangle', 1],
+          [2, 'sine', 0.14],
+          [3, 'sine', 0.05],
+        ] as const
+      ).forEach(([mul, type, amp]) => {
         const osc = context.createOscillator();
         const g = context.createGain();
         osc.type = type;
@@ -120,13 +188,31 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
         g.gain.value = amp;
         osc.connect(g);
         g.connect(master);
-        osc.start(t);
-        osc.stop(t + decay + 0.02);
+        osc.start(when);
+        osc.stop(when + press + release + 0.02);
       });
 
       voicesRef.current.push({ master });
-      if (voicesRef.current.length > 32) {
-        voicesRef.current = voicesRef.current.slice(-20);
+      if (voicesRef.current.length > 40) {
+        voicesRef.current = voicesRef.current.slice(-28);
+      }
+    },
+    [context],
+  );
+
+  const playMidiAt = useCallback(
+    (midi: number, when?: number, durationMs = 480, gainScale = 1) => {
+      if (!context || midi <= 0) return;
+
+      const t = when ?? context.currentTime;
+      const delayMs = Math.max(0, (t - context.currentTime) * 1000);
+      const durationSec = Math.max(0.12, durationMs / 1000);
+
+      const sampler = samplerRef.current;
+      if (sampler?.ready && sampler.has(midi)) {
+        sampler.play(midi, t, durationSec, gainScale);
+      } else {
+        playOscAt(midi, t, durationSec, gainScale);
       }
 
       const key = KEY_BY_MIDI[midi];
@@ -142,7 +228,7 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
         }
       }
     },
-    [context],
+    [context, playOscAt],
   );
 
   const playMidi = useCallback(
@@ -151,7 +237,7 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
       if (context.state === 'suspended') {
         void context.resume();
       }
-      playMidiAt(midi, context.currentTime);
+      playMidiAt(midi, context.currentTime, 900);
     },
     [context, playMidiAt],
   );
@@ -187,33 +273,31 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
         const origin = context.currentTime + 0.05;
 
         let offsetMs = 0;
-        notes.forEach(([midi, duration]) => {
-          if (midi > 0) {
-            playMidiAt(midi, origin + offsetMs / 1000);
-          }
+        notes.forEach(([pitch, duration]) => {
+          const midis = scorePitches(pitch);
+          const gainScale = midis.length > 1 ? 0.72 / Math.sqrt(midis.length) : 1;
+          midis.forEach((midi) => {
+            playMidiAt(midi, origin + offsetMs / 1000, duration, gainScale);
+          });
           offsetMs += duration;
         });
 
         const totalMs = offsetMs;
 
         if (song && song.lyrics.length) {
-          emitLyric(song, 0);
+          const first = resolveLyricAt(song, 0);
+          emitLyric(song, first.lineIndex, first.charIndex);
           const tick = () => {
             if (!playingRef.current || playGenRef.current !== gen) return;
             const elapsed = (context.currentTime - origin) * 1000;
             if (elapsed >= totalMs + 250) {
               playingRef.current = false;
-              emitLyric(null, -1);
+              emitLyric(null, -1, -1);
               return;
             }
-            const lines = song.lyrics;
-            let idx = 0;
-            for (let i = 0; i < lines.length; i++) {
-              if (lines[i].time <= elapsed) idx = i;
-              else break;
-            }
-            if (idx !== lyricIndexRef.current) {
-              emitLyric(song, idx);
+            const { lineIndex, charIndex } = resolveLyricAt(song, elapsed);
+            if (lineIndex !== lyricIndexRef.current || charIndex !== lyricCharRef.current) {
+              emitLyric(song, lineIndex, charIndex);
             }
             rafRef.current = requestAnimationFrame(tick);
           };
@@ -222,7 +306,7 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
           const endTimer = setTimeout(() => {
             if (playGenRef.current !== gen) return;
             playingRef.current = false;
-            emitLyric(null, -1);
+            emitLyric(null, -1, -1);
           }, totalMs + 250);
           timersRef.current.push(endTimer);
         }
@@ -236,7 +320,8 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      const key = KEY_BY_CODE[e.key.toLowerCase()];
+      const which = e.which || e.keyCode;
+      const key = KEY_BY_KEYCODE[which];
       if (key) {
         e.preventDefault();
         play(key.id);
@@ -254,6 +339,8 @@ export function usePianoAudio(onPress?: (keyId: string) => void) {
     playMidi,
     playMusic,
     stopMusic,
+    ready,
+    loadProgress,
     keys: PIANO_KEYBOARD,
     whiteKeys: PIANO_KEYBOARD.filter((k) => k.type === 'white'),
     blackKeys: PIANO_KEYBOARD.filter((k) => k.type === 'black'),

@@ -1,21 +1,7 @@
 ---
 hero:
-  title: ims-audio
-  description: 在线钢琴
-  actions:
-    - text: 快速上手
-      link: /components
-    - text: Github
-      link: https://github.com/eternallycyf/ims-audio/
+  title: '&#8203;'
+  showCustomContent: true
 ---
 
-<embed src="../README.md"></embed>
-
-工程框架选型如下：
-
-- 构建： father4
-- 文档： dumi2
-- CI: Github Action
-- CD:
-  - 文档发布: 使用 vercel 自动化触发文档站构建;
-  - npm 发布: 使用 `semantic-release` 实现 npm 包的自动化发布;
+<code src="../src/components/Piano/demo/home.tsx"></code>

@@ -11,11 +11,18 @@ demo:
 
 ## Piano
 
-在线钢琴，支持键盘与点击弹奏。
+88 键平面黑白钢琴（观感对齐 webpage-piano），内置《富士山下》《晴天》。
 
-- 音域：C3–C5（25 键，含黑键）
-- 白键：`Z X C V B N M A S D F G H J K`
-- 黑键：`2 3 5 6 7 W E T Y U`
-- 预设曲目：富士山下、遇见（歌词与音符共用 AudioContext 时钟同步）
+> 键位较多，**完整演示请看 [首页](/)**。
+
+- 音域：A0–C8（MIDI 21–108），含「中央C」标注
+- 点击键盘可自动播放；可点曲目切换 / 停止
+- 电脑键位对齐 [webpage-piano](https://github.com/yicheng-irun/webpage-piano) 默认映射（A/S/D…、空格=中央C 等）
+
+```tsx
+import { Piano } from 'ims-audio';
+
+export default () => <Piano autoPlay />;
+```
 
 <code src='./demo/index.tsx'></code>

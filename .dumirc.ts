@@ -2,7 +2,6 @@ import { defineConfig } from 'dumi';
 import type { SiteThemeConfig } from 'dumi-theme-antd-style';
 import { footer } from 'ims-template-config';
 import path from 'path';
-import { featuresZh } from './config/features';
 import style from './docs/siteIndexStyle';
 import { homepage, name as repo } from './package.json';
 
@@ -13,38 +12,10 @@ const themeConfig: SiteThemeConfig = {
   name: repo,
   github: homepage,
   logo: isProd ? '/images/origin.png' : `/${repo}/images/origin.png`,
+  // 首页不展示 Hero 文案/按钮，仅渲染 markdown 中的钢琴 Demo
   hero: {
-    'zh-CN': {
-      description: '在线钢琴',
-      actions: [
-        {
-          type: 'primary',
-          text: '开始使用',
-          link: '/components',
-        },
-        {
-          text: 'Github',
-          link: 'https://github.com/eternallycyf/',
-          openExternal: true,
-        },
-      ],
-      // features: featuresZh,
-    },
-    'en-US': {
-      description: 'Online piano',
-      actions: [
-        {
-          type: 'primary',
-          text: 'Start',
-          link: '/components',
-        },
-        {
-          text: 'Github',
-          link: 'https://github.com/eternallycyf/',
-          openExternal: true,
-        },
-      ],
-    },
+    'zh-CN': { showCustomContent: true },
+    'en-US': { showCustomContent: true },
   },
   socialLinks: { github: homepage },
   apiHeader: {
