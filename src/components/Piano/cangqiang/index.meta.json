@@ -1,0 +1,47 @@
+[
+  {
+    "trackId": "qinghuaci",
+    "title": "青花瓷",
+    "artist": "周杰伦",
+    "source": "https://www.cangqiang.com.cn/bofang/3714.html",
+    "file": "./cangqiang/qinghuaci",
+    "notesExport": "QINGHUACI_NOTES",
+    "lyricsExport": "QINGHUACI_LYRICS"
+  },
+  {
+    "trackId": "lantingxu",
+    "title": "兰亭序",
+    "artist": "周杰伦",
+    "source": "https://www.cangqiang.com.cn/bofang/167116.html",
+    "file": "./cangqiang/lantingxu",
+    "notesExport": "LANTINGXU_NOTES",
+    "lyricsExport": "LANTINGXU_LYRICS"
+  },
+  {
+    "trackId": "guyongzhe",
+    "title": "孤勇者",
+    "artist": "陈奕迅",
+    "source": "https://jianpu.space/zh-tw/songList/6666bf5f1e85a6493d60e8b8",
+    "file": "./cangqiang/guyongzhe",
+    "notesExport": "GUYONGZHE_NOTES",
+    "lyricsExport": "GUYONGZHE_LYRICS"
+  },
+  {
+    "trackId": "keximeiruguo",
+    "title": "可惜没如果",
+    "artist": "林俊杰",
+    "source": "https://jianpu.space/zh-tw/songList/65199ac390e1087b5a0c2c59",
+    "file": "./cangqiang/keximeiruguo",
+    "notesExport": "KEXIMEIRUGUO_NOTES",
+    "lyricsExport": "KEXIMEIRUGUO_LYRICS"
+  },
+  {
+    "trackId": "tashuo",
+    "title": "她说",
+    "artist": "林俊杰",
+    "source": "https://jianpu.space/zh-tw/songList/636bbb355f5c0ffe94aec4dc",
+    "file": "./cangqiang/tashuo",
+    "notesExport": "TASHUO_NOTES",
+    "lyricsExport": "TASHUO_LYRICS"
+  }
+]

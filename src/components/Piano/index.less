@@ -1,77 +1,423 @@
+/* 艺术衬线：琴盖烫金（国内镜像，失败则回退系统字体） */
+@import url('https://fonts.font.im/css2?family=Cinzel:wght@500;600&display=swap');
+
 .ims-piano {
   --piano-width: min(1280px, 100%);
-  --key-act: #c783b2;
-  --key-act-soft: #ad3c8a99;
-  --middle-c: #a43983;
+  --key-act: #0071e3;
+  --key-act-soft: #0071e399;
+  --middle-c: #0071e3;
+  --float-sky: 220px;
+  --ivory: #f7f7f8;
+  --ivory-edge: #c8c8ce;
+  --ivory-front: #b4b4bc;
+  --ebony: #141418;
+  --ebony-edge: #050506;
+  --key-depth: 14px;
+  --black-depth: 11px;
+  --stage-tilt: 8deg;
+  --stage-perspective: 1800px;
+  --piano-stage-h: 400px;
+  --piano-lift: 48px;
+  --ink: #1d1d1f;
+  --ink-soft: rgba(29, 29, 31, 0.38);
+  --ink-active: #0071e3;
+
+  /* 无谱子 / 谱面收起：给音符更长上浮空间 */
+  &.ims-piano--float-tall {
+    --float-sky: 340px;
+  }
+
   position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 0;
+  /* 钢琴贴底，上方留给可滚动谱面 */
+  padding-bottom: calc(var(--piano-stage-h) + var(--piano-lift));
+  box-sizing: border-box;
+  overflow: hidden;
+  user-select: none;
+  /* 浅枫木桌面兜底 */
+  background-color: #d8cdb8;
+  background-image: radial-gradient(ellipse 70% 50% at 50% 28%, rgba(255, 255, 255, 0.35) 0%, transparent 60%),
+  linear-gradient(180deg, #e6ddd0 0%, #d4c7b4 55%, #c4b59e 100%);
+  background-size: cover;
+  background-position: center;
+  font-family: 'SF Pro Display',
+  'SF Pro Text',
+  'Helvetica Neue',
+  Helvetica,
+  Arial,
+  'PingFang SC',
+  'Microsoft YaHei',
+  sans-serif;
+}
+
+.ims-piano-player {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  padding: 24px 16px 28px;
+  gap: 8px;
   box-sizing: border-box;
-  user-select: none;
-  background: transparent;
-  font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.ims-piano__lyric {
-  width: min(720px, 92%);
-  padding: 14px 20px 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-  text-align: center;
+.ims-piano__fab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  z-index: 1100;
 }
 
-.ims-piano__lyric--active {
-  border-color: rgba(164, 57, 131, 0.18);
+.ims-piano__fab-meta-wrap {
+  position: fixed;
+  top: 72px;
+  left: 24px;
+  justify-content: flex-start;
+  align-items: center;
+  max-width: min(280px, calc(100vw - 48px));
+  width: auto;
 }
 
-.ims-piano__lyric-meta {
-  margin-bottom: 8px;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: rgba(0, 0, 0, 0.4);
-}
-
-.ims-piano__lyric-lines {
+.ims-piano__fab-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-height: 72px;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  width: 180px;
+  max-width: min(180px, calc(100vw - 48px));
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  transition:
+    width 220ms ease,
+    max-width 220ms ease,
+    padding 220ms ease;
+  overflow: hidden;
+}
+
+.ims-piano__fab-meta:hover,
+.ims-piano__fab-meta:focus-within {
+  width: min(180px, calc(100vw - 48px));
+  max-width: min(180px, calc(100vw - 48px));
+  padding: 10px 14px 12px 8px;
+}
+
+.ims-piano__fab-meta-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ims-piano__fab-back {
+  appearance: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.ims-piano__fab-back:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.ims-piano__fab-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: #222;
+}
+
+.ims-piano__fab-back+.ims-piano__fab-meta-text,
+.ims-piano__fab-back+.ims-piano__fab-cover {
+  margin-left: auto;
+}
+
+.ims-piano__fab-cover--fallback {
+  background: linear-gradient(145deg, #222 0%, #666 100%);
+}
+
+.ims-piano__fab-meta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 0 1 auto;
+  text-align: right;
+
+  strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  span {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.ims-piano__fab-seek {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-height: 0;
+  margin-top: 0;
+  padding: 0 4px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  box-sizing: border-box;
+  transition:
+    max-height 220ms ease,
+    margin-top 220ms ease,
+    opacity 180ms ease;
+}
+
+.ims-piano__fab-meta:hover .ims-piano__fab-seek,
+.ims-piano__fab-meta:focus-within .ims-piano__fab-seek {
+  max-height: 28px;
+  margin-top: 10px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ims-piano__fab-controls {
+  position: fixed;
+  right: 24px;
+  top: calc((100vh - var(--piano-stage-h)) * 0.5);
+  bottom: auto;
+  transform: translateY(-50%);
+  z-index: 1100;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+}
+
+.ims-piano__fab-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(12px);
+  transition:
+    max-width 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.ims-piano__fab-controls:hover .ims-piano__fab-actions,
+.ims-piano__fab-controls:focus-within .ims-piano__fab-actions {
+  max-width: 56px;
+  opacity: 1;
+  overflow: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.ims-piano__fab-btn.ant-float-btn,
+.ims-piano__fab-controls .ant-float-btn {
+  position: static !important;
+  inset: auto !important;
+  margin: 0 !important;
+}
+
+.ims-piano__fab-tool.ant-float-btn {
+  flex: 0 0 auto;
+
+  .ant-float-btn-body {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .ant-float-btn-content {
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  &:hover .ant-float-btn-body {
+    background: transparent !important;
+  }
+
+  &:hover .ant-float-btn-content {
+    color: rgba(0, 0, 0, 0.88);
+  }
+}
+
+.ims-piano__fab-volume {
+  height: 120px;
+  padding: 8px 4px;
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
-.ims-piano__lyric-prev,
-.ims-piano__lyric-next {
+.ims-piano__score-panel {
+  position: relative;
+  z-index: 40;
+  width: min(920px, 96%);
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 8px;
+  padding: 16px 14px 14px;
+  border-radius: 18px;
+  /* Apple Music 风毛玻璃谱面卡 */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 18px 48px rgba(0, 0, 0, 0.1),
+    0 4px 14px rgba(0, 0, 0, 0.05);
+  transform: none;
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'PingFang SC', 'Microsoft YaHei',
+    monospace;
+  overflow: hidden;
+}
+
+.ims-piano__score-panel--active {
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 20px 52px rgba(0, 0, 0, 0.12),
+    0 0 40px rgba(255, 220, 170, 0.18);
+}
+
+.ims-piano__score-panel--svg {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 10px;
+}
+
+.ims-piano__score-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px 6px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 隐藏谱子：整块面板一并收起 */
+.ims-piano__score-panel--hidden {
+  display: none;
+}
+
+.ims-piano__score-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: #fff;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ims-piano__score-row {
+  display: block;
+  width: 100%;
   margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  text-align: left;
   font-size: 13px;
-  line-height: 1.5;
-  color: rgba(0, 0, 0, 0.28);
-}
-
-.ims-piano__lyric-current {
-  margin: 0;
-  font-size: 20px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+  color: var(--ink);
   font-weight: 500;
-  line-height: 1.45;
-  letter-spacing: 0.04em;
-  color: #222;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.ims-piano__lyric-char {
-  display: inline;
-  color: rgba(0, 0, 0, 0.32);
-  transition: color 80ms linear, text-shadow 80ms linear;
+.ims-piano__time {
+  flex: 0 0 auto;
+  width: 34px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(0, 0, 0, 0.5);
+  text-align: center;
 }
 
-.ims-piano__lyric-char--on {
-  color: var(--middle-c);
-  text-shadow: 0 0 12px rgba(164, 57, 131, 0.28);
-  font-weight: 600;
+.ims-piano__seek {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(to right,
+      var(--middle-c) 0%,
+      var(--middle-c) var(--seek, 0%),
+      rgba(0, 0, 0, 0.12) var(--seek, 0%),
+      rgba(0, 0, 0, 0.12) 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+.ims-piano__seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--middle-c);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.ims-piano__seek::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--middle-c);
+  border: 2px solid #fff;
 }
 
 .ims-piano__songs {
@@ -79,6 +425,9 @@
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 8px;
 }
 
 .ims-piano__songs button {
@@ -99,14 +448,14 @@
 }
 
 .ims-piano__songs button:hover {
-  border-color: rgba(164, 57, 131, 0.45);
-  color: #a43983;
+  border-color: rgba(139, 90, 43, 0.45);
+  color: var(--middle-c);
 }
 
 .ims-piano__songs-active {
-  border-color: rgba(164, 57, 131, 0.65) !important;
-  background: #faf0f6 !important;
-  color: #a43983 !important;
+  border-color: rgba(139, 90, 43, 0.65) !important;
+  background: #f3e8d0 !important;
+  color: var(--middle-c) !important;
 }
 
 .ims-piano__songs-stop {
@@ -114,36 +463,341 @@
   color: rgba(0, 0, 0, 0.45) !important;
 }
 
-/* —— 平面键盘（对齐 webpage-piano 观感） —— */
-.ims-piano__stage {
-  width: var(--piano-width);
+/* —— 台灯：几何灯头 + 暖色光锥 —— */
+.ims-piano__lamp {
+  position: absolute;
+  top: max(24px, 4%);
+  right: max(20px, 5%);
+  z-index: 30;
+  width: 200px;
+  height: 320px;
+  pointer-events: none;
+}
+
+.ims-piano__lamp-stem {
+  position: absolute;
+  top: 18px;
+  right: 52px;
+  width: 3px;
+  height: 72px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #c8c8ce 0%, #8e8e93 100%);
+  transform: rotate(18deg);
+  transform-origin: top center;
+}
+
+.ims-piano__lamp-head {
+  position: absolute;
+  top: 8px;
+  right: 28px;
+  width: 56px;
+  height: 28px;
+  border-radius: 18px 18px 6px 6px;
+  background: linear-gradient(165deg, #3a3a3c 0%, #1c1c1e 55%, #0a0a0c 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: rotate(22deg);
+  transform-origin: center bottom;
+}
+
+.ims-piano__lamp-head::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
+  height: 6px;
   border-radius: 4px;
+  background: radial-gradient(ellipse at center, #ffe8b8 0%, #ffc978 55%, #e8a040 100%);
+  opacity: 0.95;
+  animation: ims-piano-lamp-bulb 3.6s ease-in-out infinite;
+}
+
+.ims-piano__lamp-beam {
+  position: absolute;
+  top: 36px;
+  right: -40px;
+  width: 280px;
+  height: 420px;
+  background: radial-gradient(ellipse 58% 48% at 42% 8%,
+      rgba(255, 236, 200, 0.42) 0%,
+      rgba(255, 220, 160, 0.16) 28%,
+      rgba(255, 210, 140, 0.05) 52%,
+      transparent 72%);
+  transform: rotate(12deg);
+  transform-origin: 50% 0;
+  filter: blur(1px);
+  animation: ims-piano-lamp-glow 4.8s ease-in-out infinite;
+}
+
+.ims-piano__lamp-pool {
+  position: absolute;
+  top: 200px;
+  right: 10px;
+  width: 220px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+      rgba(255, 230, 180, 0.22) 0%,
+      rgba(255, 220, 160, 0.08) 45%,
+      transparent 70%);
+  filter: blur(8px);
+  animation: ims-piano-lamp-glow 4.8s ease-in-out infinite;
+}
+
+@keyframes ims-piano-lamp-bulb {
+
+  0%,
+  100% {
+    opacity: 0.88;
+    filter: brightness(1);
+  }
+
+  50% {
+    opacity: 1;
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes ims-piano-lamp-glow {
+
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 整桌暖光洗染（台灯环境光） */
+.ims-piano__lamp-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 42% at 78% 12%,
+      rgba(255, 232, 190, 0.28) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 60% 50% at 55% 35%,
+      rgba(255, 245, 220, 0.1) 0%,
+      transparent 55%);
+  mix-blend-mode: soft-light;
+}
+
+/* —— CSS 3D 舞台：透视 + 环境光 + 挤出琴键（无 three 依赖） —— */
+.ims-piano__stage {
+  position: absolute;
+  left: 50%;
+  bottom: var(--piano-lift);
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: var(--piano-width);
+  margin-top: 0;
+  padding-top: var(--float-sky);
+  padding-bottom: 12px;
+  border-radius: 14px 14px 0 0;
   overflow: hidden;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.18);
-  background: #f3efe8;
+  /* 色块只在琴上方预留区漂浮，不叠到谱面/按钮 */
+  background: transparent;
+  box-shadow: none;
+  perspective: var(--stage-perspective);
+  perspective-origin: 50% 62%;
+  pointer-events: none;
+}
+
+.ims-piano__stage .ims-piano__body,
+.ims-piano__stage .ims-piano__keyboard,
+.ims-piano__stage .ims-piano__key,
+.ims-piano__stage .ims-piano__black {
+  pointer-events: auto;
+}
+
+.ims-piano__floor {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 2px;
+  height: 48px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.22) 0%,
+      rgba(0, 0, 0, 0.08) 42%,
+      transparent 72%);
+  filter: blur(14px);
+  transform: scaleY(0.35);
+}
+
+.ims-piano__body {
+  position: relative;
+  z-index: 2;
+  transform: rotateX(var(--stage-tilt));
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+  border-radius: 14px;
+  will-change: transform;
+  /* Apple 产品摄影：大而软的环境阴影 */
+  filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.18)) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.1));
+}
+
+/* 敲键上浮音符层：整层盖住 stage，由 overflow:hidden + padding-top 留出漂浮区 */
+.ims-piano__floats {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ims-piano__float {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-family: 'Apple Color Emoji', 'Segoe UI Symbol', 'Noto Music', serif;
+  font-weight: 600;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  will-change: transform, opacity;
+  animation-name: ims-piano-float-up;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-fill-mode: forwards;
+  user-select: none;
+}
+
+@keyframes ims-piano-float-up {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.7);
+    opacity: 0.95;
+  }
+
+  70% {
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: translate3d(var(--fx, 0), var(--fy, -200px), 0) rotate(var(--fr, 12deg)) scale(1.05);
+    opacity: 0;
+  }
 }
 
 .ims-piano__wood {
-  height: 28px;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(180, 150, 110, 0.08) 0 1px,
-      transparent 1px 7px
-    ),
-    linear-gradient(180deg, #f7f2ea 0%, #ebe3d6 45%, #e4d9c8 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 3;
+  height: 40px;
+  border-radius: 14px 14px 0 0;
+  background-color: #111113;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 琴盖烫金诗句 */
+.ims-piano__brand {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0 16px;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: Cinzel, 'Times New Roman', 'Songti SC', serif;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-align: center;
+  text-transform: lowercase;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  background: linear-gradient(185deg,
+      #f8ecb8 0%,
+      #e8d078 18%,
+      #c9a227 42%,
+      #8a6a12 58%,
+      #d4af37 78%,
+      #f0dfa0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.72)) drop-shadow(0 -0.5px 0 rgba(255, 236, 180, 0.35));
+  opacity: 0.9;
+}
+
+.ims-piano__brand-first {
+  text-transform: uppercase;
+}
+
+.ims-piano__wood-gloss {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(115deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.1) 48%,
+      rgba(255, 255, 255, 0.03) 52%,
+      transparent 62%);
+  pointer-events: none;
+}
+
+.ims-piano__wood-bevel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+
+.ims-piano__wood-lip {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 0;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.28),
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.28),
+      transparent);
+  opacity: 0.7;
+  z-index: 1;
+}
+
+.ims-piano__felt {
+  position: relative;
+  z-index: 3;
+  height: 8px;
+  margin: 0;
+  background-color: #1a1a1e;
+  background-size: cover;
+  background-position: center;
 }
 
 .ims-piano__keyboard {
   position: relative;
-  height: 200px;
+  z-index: 2;
+  height: 218px;
   overflow-x: auto;
   overflow-y: hidden;
-  background: #ece8e1;
+  border-radius: 0 0 14px 14px;
+  background: linear-gradient(180deg, #1c1c20 0%, #121216 18%, #0a0a0c 100%);
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
   touch-action: none;
 }
 
@@ -152,7 +806,7 @@
 }
 
 .ims-piano__keyboard::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 3px;
 }
 
@@ -162,116 +816,321 @@
   height: 100%;
   min-width: max(100%, calc(var(--white-count) * 28px));
   width: max(100%, calc(var(--white-count) * 28px));
-  padding: 0 1px 10px;
+  padding: 0 2px calc(var(--key-depth) + 10px);
   box-sizing: border-box;
+  transform-style: preserve-3d;
 }
 
 .ims-piano__keys {
   display: flex;
   height: 100%;
   white-space: nowrap;
+  transform-style: preserve-3d;
 }
 
 .ims-piano__key {
   position: relative;
   flex: 1 0 0;
   min-width: 0;
-  height: 100%;
+  height: calc(100% - 2px);
   margin: 0 0 0 -1px;
   padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.22);
-  border-radius: 0 0 4px 4px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7f7f7 78%, #ececec 100%);
+  border: none;
+  border-radius: 0 0 6px 6px;
+  background-color: var(--ivory);
+  background-size: cover;
+  background-position: top center;
   box-sizing: border-box;
   cursor: pointer;
-  box-shadow:
-    inset 1px 0 0 rgba(255, 255, 255, 0.8),
-    inset -1px 0 0 rgba(0, 0, 0, 0.04),
-    0 1px 0 rgba(0, 0, 0, 0.06);
+  transform: translate3d(0, 0, 0);
+  transform-style: preserve-3d;
+  transition: transform 100ms cubic-bezier(0.2, 0.85, 0.25, 1);
+  /* 实色挤出厚度，无模糊投影 */
+  box-shadow: 0 var(--key-depth) 0 var(--ivory-edge);
 }
 
-.ims-piano__key:hover {
-  background: linear-gradient(180deg, #fff 0%, #f2f2f2 100%);
+.ims-piano__key-sheen {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0.08) 12%,
+      transparent 38%),
+    linear-gradient(105deg,
+      rgba(255, 255, 255, 0.32) 0%,
+      transparent 28%,
+      transparent 72%,
+      rgba(0, 0, 0, 0.06) 100%);
+  z-index: 1;
+}
+
+.ims-piano__key-side {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: var(--key-depth);
+  width: 2px;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+.ims-piano__key-side--l {
+  left: 0;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(200, 205, 215, 0.2) 40%,
+      rgba(140, 145, 155, 0.35) 100%);
+}
+
+.ims-piano__key-side--r {
+  right: 0;
+  background: linear-gradient(180deg,
+      rgba(90, 92, 100, 0.18) 0%,
+      rgba(60, 62, 70, 0.3) 100%);
+}
+
+.ims-piano__key-front {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--key-depth) * -1);
+  height: var(--key-depth);
+  border-radius: 0 0 5px 5px;
+  background-color: var(--ivory-front);
+  background-size: cover;
+  background-position: bottom center;
+  background-image: linear-gradient(180deg,
+      #d8d8de 0%,
+      #c4c4cc 45%,
+      #a8a8b2 100%);
+  z-index: 0;
+  transform: translateZ(-1px);
+}
+
+.ims-piano__key:hover .ims-piano__key-sheen {
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.1) 12%,
+      transparent 38%),
+    linear-gradient(105deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      transparent 28%,
+      transparent 72%,
+      rgba(0, 0, 0, 0.05) 100%);
 }
 
 .ims-piano__key--pressed,
 .ims-piano__key:active {
-  background: var(--key-act-soft);
-  border-color: rgba(0, 0, 0, 0.28);
-  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.12);
+  transform: translate3d(0, 8px, -2px) scaleY(0.992);
+  box-shadow: 0 4px 0 var(--ivory-edge);
+}
+
+.ims-piano__key--pressed::after,
+.ims-piano__key:active::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg,
+      rgba(0, 113, 227, 0.12) 0%,
+      rgba(0, 113, 227, 0.28) 100%);
+  z-index: 2;
+}
+
+.ims-piano__key--pressed .ims-piano__key-front,
+.ims-piano__key:active .ims-piano__key-front {
+  bottom: -4px;
+  height: 4px;
+  background-image: linear-gradient(180deg,
+      #b8b8c0 0%,
+      #9a9aa4 100%);
+}
+
+.ims-piano__key--pressed .ims-piano__key-side,
+.ims-piano__key:active .ims-piano__key-side {
+  bottom: 4px;
+  opacity: 0.45;
 }
 
 .ims-piano__key-label {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 10px;
+  bottom: 14px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
-  color: #444;
+  color: rgba(28, 28, 32, 0.82);
+  font-weight: 600;
   pointer-events: none;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 3;
+}
+
+.ims-piano__key-octave {
+  display: inline-block;
+  margin-left: 1px;
+  font-size: 0.72em;
+  font-weight: 700;
+  color: rgba(20, 20, 24, 0.88);
+  line-height: 1;
+}
+
+.ims-piano__key-octave--sup {
+  vertical-align: super;
+  position: relative;
+  top: -0.15em;
+}
+
+.ims-piano__key-octave--sub {
+  vertical-align: sub;
+  position: relative;
+  top: 0.12em;
 }
 
 .ims-piano__middle-c {
   position: absolute;
   left: 50%;
-  bottom: 28px;
+  bottom: 32px;
   transform: translateX(-50%);
   font-size: 11px;
+  font-weight: 500;
   color: var(--middle-c);
   pointer-events: none;
   white-space: nowrap;
-  z-index: 2;
+  z-index: 3;
 }
 
 .ims-piano__blacks {
   position: absolute;
-  left: 1px;
-  right: 1px;
+  left: 2px;
+  right: 2px;
   top: 0;
-  height: 62%;
+  height: 58%;
   z-index: 4;
   pointer-events: none;
+  transform-style: preserve-3d;
 }
 
 .ims-piano__black {
   position: absolute;
   top: 0;
-  height: 100%;
+  height: calc(100% - var(--black-depth));
   padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.55);
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(180deg, #5a5a5a 0%, #3a3a3a 12%, #2a2a2a 40%, #1a1a1a 100%);
-  box-shadow:
-    inset 1px 0 0 rgba(255, 255, 255, 0.18),
-    inset -2px 0 4px rgba(0, 0, 0, 0.45),
-    0 2px 4px rgba(0, 0, 0, 0.35);
+  border: none;
+  border-radius: 0 0 4px 4px;
+  background-color: var(--ebony);
+  background-size: cover;
+  background-position: top center;
   cursor: pointer;
   pointer-events: auto;
+  transform: translate3d(0, 0, 4px);
+  transform-style: preserve-3d;
+  transition: transform 85ms cubic-bezier(0.2, 0.85, 0.25, 1);
+  box-shadow: 0 var(--black-depth) 0 var(--ebony-edge);
 }
 
-.ims-piano__black:hover {
-  filter: brightness(1.15);
+.ims-piano__black-sheen {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.08) 14%,
+      transparent 40%),
+    linear-gradient(95deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      transparent 40%,
+      transparent 70%,
+      rgba(255, 255, 255, 0.04) 100%);
+}
+
+.ims-piano__black-side {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  opacity: 0.9;
+}
+
+.ims-piano__black-side--l {
+  left: 0;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.06) 100%);
+}
+
+.ims-piano__black-side--r {
+  right: 0;
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.75) 100%);
+}
+
+.ims-piano__black-front {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--black-depth) * -1);
+  height: var(--black-depth);
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(180deg, #323238 0%, #141416 55%, #070708 100%);
 }
 
 .ims-piano__black--pressed,
 .ims-piano__black:active {
-  background: var(--key-act);
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.35);
+  transform: translate3d(0, 6px, 2px) scaleY(0.988);
+  box-shadow: 0 3px 0 var(--ebony-edge);
+}
+
+.ims-piano__black--pressed .ims-piano__black-front,
+.ims-piano__black:active .ims-piano__black-front {
+  bottom: -3px;
+  height: 3px;
+  background: linear-gradient(180deg, #1c1c20 0%, #050506 100%);
+}
+
+.ims-piano__black--pressed::after,
+.ims-piano__black:active::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg,
+      rgba(0, 113, 227, 0.22) 0%,
+      rgba(0, 113, 227, 0.42) 100%);
 }
 
 @media (max-width: 640px) {
   .ims-piano {
-    padding: 16px 8px 20px;
+    padding: 16px 8px 0;
+    padding-bottom: calc(var(--piano-stage-h) + var(--piano-lift) + 8px);
     gap: 14px;
+    --key-depth: 12px;
+    --black-depth: 9px;
+    --stage-tilt: 6deg;
+    --piano-stage-h: 360px;
+    --piano-lift: 36px;
+  }
+
+  .ims-piano__stage {
+    padding-bottom: 8px;
   }
 
   .ims-piano__keyboard {
-    height: 160px;
+    height: 172px;
   }
 
   .ims-piano__board {
@@ -280,52 +1139,133 @@
   }
 
   .ims-piano__key-label {
-    font-size: 9px;
-    bottom: 8px;
+    font-size: 10px;
+    bottom: 10px;
   }
 
   .ims-piano__middle-c {
     font-size: 9px;
-    bottom: 22px;
+    bottom: 24px;
   }
 
-  .ims-piano__lyric-current {
-    font-size: 17px;
+  .ims-piano__brand {
+    font-size: 7px;
+    letter-spacing: 0.1em;
+    padding: 0 10px;
+  }
+
+  .ims-piano__score-panel {
+    margin-top: 4px;
+    padding: 10px 8px 8px;
+    border-radius: 14px;
+    width: min(100%, 96%);
+  }
+
+  .ims-piano__score-row {
+    font-size: 11px;
+    padding: 4px 4px;
+  }
+
+  .ims-piano__score-scroll {
+    padding: 2px 2px;
+  }
+
+  .ims-piano__lamp {
+    width: 140px;
+    height: 220px;
+    top: 12px;
+    right: 8px;
+  }
+
+  .ims-piano__lamp-beam {
+    width: 200px;
+    height: 300px;
+  }
+
+  .ims-piano__lamp-pool {
+    width: 140px;
+    height: 100px;
+    top: 140px;
+  }
+
+  .ims-piano__fab-meta-wrap {
+    top: 64px;
+    left: 12px;
+    max-width: min(140px, calc(100vw - 80px));
+  }
+
+  .ims-piano__fab-meta {
+    width: 110px;
+    max-width: 110px;
+  }
+
+  .ims-piano__fab-meta:hover,
+  .ims-piano__fab-meta:focus-within {
+    width: min(160px, calc(100vw - 24px));
+    max-width: min(160px, calc(100vw - 24px));
+  }
+
+  .ims-piano__fab-controls {
+    right: 12px;
+    gap: 8px;
   }
 }
 
-/* 暗色文档站适配 */
+/* 暗色文档站：毛玻璃谱面 + 暖台灯，不反白 */
 @media (prefers-color-scheme: dark) {
-  .ims-piano__lyric {
-    background: rgba(30, 32, 38, 0.85);
-    border-color: rgba(255, 255, 255, 0.08);
+  .ims-piano__score-panel {
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.5) inset,
+      0 18px 48px rgba(0, 0, 0, 0.28),
+      0 0 36px rgba(255, 210, 140, 0.12);
   }
 
-  .ims-piano__lyric-meta {
-    color: rgba(255, 255, 255, 0.4);
+  .ims-piano__fab-meta {
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   }
 
-  .ims-piano__lyric-prev,
-  .ims-piano__lyric-next {
-    color: rgba(255, 255, 255, 0.28);
+  .ims-piano__fab-back {
+    background: rgba(29, 29, 31, 0.06);
+    color: rgba(29, 29, 31, 0.55);
   }
 
-  .ims-piano__lyric-current {
-    color: #f2f2f2;
+  .ims-piano__fab-back:hover {
+    background: rgba(29, 29, 31, 0.1);
+    color: rgba(29, 29, 31, 0.88);
   }
 
-  .ims-piano__lyric-char {
-    color: rgba(255, 255, 255, 0.28);
+  .ims-piano__fab-tool.ant-float-btn {
+    .ant-float-btn-content {
+      color: rgba(29, 29, 31, 0.5);
+    }
+
+    &:hover .ant-float-btn-content {
+      color: rgba(29, 29, 31, 0.88);
+    }
   }
 
-  .ims-piano__lyric-char--on {
-    color: #e8a0d0;
-    text-shadow: 0 0 14px rgba(232, 160, 208, 0.35);
+  .ims-piano__fab-meta-text strong {
+    color: var(--ink);
+  }
+
+  .ims-piano__fab-meta-text span {
+    color: rgba(29, 29, 31, 0.45);
+  }
+
+  .ims-piano__score-row {
+    color: var(--ink);
+  }
+
+  .ims-piano__time {
+    color: rgba(29, 29, 31, 0.5);
   }
 
   .ims-piano__songs button {
-    background: #1c1e24;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #ddd;
+    background: rgba(255, 255, 255, 0.72);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: var(--ink);
   }
 }

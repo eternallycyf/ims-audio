@@ -1,6 +1,5 @@
 import { defineConfig } from 'dumi';
 import type { SiteThemeConfig } from 'dumi-theme-antd-style';
-import { footer } from 'ims-template-config';
 import path from 'path';
 import style from './docs/siteIndexStyle';
 import { homepage, name as repo } from './package.json';
@@ -24,11 +23,7 @@ const themeConfig: SiteThemeConfig = {
     pkg: 'ims-audio',
     match: ['/ims-audio/src/component'],
   },
-  footerConfig: {
-    bottom: '2023',
-    copyright: 'Made with ❤️ by eternallycyf - AFX & 数字科技',
-    columns: footer(repo),
-  },
+  footer: false,
 };
 
 export default defineConfig({

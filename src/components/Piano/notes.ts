@@ -1,9 +1,4 @@
-/**
- * 88 键三角钢琴键位（A0–C8，MIDI 21–108）
- * 键序/标注规则对齐 webpage-piano：
- * https://github.com/yicheng-irun/webpage-piano
- * （参考其 keyboard.js / midi.js 逻辑，非复制源码）
- */
+/** 88 键三角钢琴键位（A0–C8，MIDI 21–108） */
 
 /** 十二平均律：MIDI → Hz */
 export function midiToFreq(midi: number): number {
@@ -26,13 +21,17 @@ export interface PianoKeyDef {
   id: string;
   /** MIDI 21–108 */
   midi: number;
-  /** 钢琴键序 1–88（与 webpage-piano 一致） */
+  /** 钢琴键序 1–88 */
   pianoIndex: number;
   type: KeyType;
   /** 电脑键盘映射（仅中音区）；无映射为空串 */
   code: string;
-  /** 白键谱号标注，如 A₂ / c¹ */
+  /** 白键音名，如 A / d */
   label: string;
+  /** 八度脚标数字（普通数字，便于清晰渲染） */
+  octaveMark: string;
+  /** 脚标位置：低音下标 / 高音上标 / 无 */
+  octaveMarkKind: 'none' | 'sub' | 'sup';
   /** 是否中央 C（MIDI 60 / 键 40） */
   isMiddleC: boolean;
   /** 白键序号 0..51，黑键相对左侧白键 */
@@ -45,50 +44,48 @@ export const PIANO_MIDI_MAX = 108;
 export const MIDDLE_C_MIDI = 60;
 export const MIDDLE_C_INDEX = 40; // 1-based piano index
 
-const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
-const SUB = '₀₁₂₃₄₅₆₇₈₉';
-
-function toSup(n: number): string {
-  return String(n)
-    .split('')
-    .map((d) => SUP[Number(d)] ?? d)
-    .join('');
-}
-
-function toSub(n: number): string {
-  return String(n)
-    .split('')
-    .map((d) => SUB[Number(d)] ?? d)
-    .join('');
+export interface WhiteKeyLabelParts {
+  letter: string;
+  octaveMark: string;
+  octaveMarkKind: 'none' | 'sub' | 'sup';
 }
 
 /**
- * webpage-piano 白键标注：
- * 低音大写+下标，中音小写，高音小写+上标
+ * 白键谱号标注：低音大写+下标，中音小写，高音小写+上标
+ * 脚标用普通数字，由 UI 用 CSS 做上/下标（Unicode 上标在小字号下几乎看不清）
  */
-export function pianoWhiteLabel(pianoIndex: number): string {
-  // j = 0..87，以 A 起算的十二律循环（与 webpage-piano demo12/code12 一致）
+export function pianoWhiteLabelParts(pianoIndex: number): WhiteKeyLabelParts {
+  // j = 0..87，以 A 起算的十二律循环
   const j = pianoIndex - 1;
   const yu = j % 12;
   const code12 = ['A', '', 'B', 'C', '', 'D', '', 'E', 'F', '', 'G', ''] as const;
   const letter = code12[yu];
-  if (!letter) return '';
+  if (!letter) {
+    return { letter: '', octaveMark: '', octaveMarkKind: 'none' };
+  }
 
-  let sbp = '';
+  let octaveMark = '';
+  let octaveMarkKind: WhiteKeyLabelParts['octaveMarkKind'] = 'none';
   if (pianoIndex <= 15) {
-    sbp = toSub(Math.floor((-pianoIndex + 27) / 12));
+    octaveMark = String(Math.floor((-pianoIndex + 27) / 12));
+    octaveMarkKind = 'sub';
   } else if (pianoIndex >= 40) {
-    sbp = toSup(Math.floor((pianoIndex - 28) / 12));
+    octaveMark = String(Math.floor((pianoIndex - 28) / 12));
+    octaveMarkKind = 'sup';
   }
 
   const base = pianoIndex < 28 ? letter : letter.toLowerCase();
-  return `${base}${sbp}`;
+  return { letter: base, octaveMark, octaveMarkKind };
+}
+
+/** 兼容旧用法：拼成纯文本（脚标为普通数字，如 A2 / d3） */
+export function pianoWhiteLabel(pianoIndex: number): string {
+  const { letter, octaveMark } = pianoWhiteLabelParts(pianoIndex);
+  return `${letter}${octaveMark}`;
 }
 
 /**
  * 电脑键盘映射（keyCode → 钢琴键序 1–88）
- * 对齐 webpage-piano 默认表：
- * https://github.com/yicheng-irun/webpage-piano/blob/master/src/pages/piano/index/pckey-key.js
  * MIDI = pianoIndex + 20
  */
 export const PC_KEYCODE_TO_PIANO: Record<number, number> = {
@@ -241,7 +238,7 @@ function buildKeyboard(): PianoKeyDef[] {
     const isBlack = [1, 3, 6, 8, 10].includes(pc);
     const keyCodes = PIANO_TO_KEYCODES[pianoIndex] ?? [];
     const primaryKc = keyCodes[0];
-    const code = primaryKc != null ? (KEYCODE_LABEL[primaryKc] ?? '').toLowerCase() : '';
+    const code = primaryKc !== undefined ? (KEYCODE_LABEL[primaryKc] ?? '').toLowerCase() : '';
 
     if (isBlack) {
       keys.push({
@@ -251,17 +248,22 @@ function buildKeyboard(): PianoKeyDef[] {
         type: 'black',
         code,
         label: '',
+        octaveMark: '',
+        octaveMarkKind: 'none',
         isMiddleC: false,
         whiteIndex: whiteIndex - 1,
       });
     } else {
+      const parts = pianoWhiteLabelParts(pianoIndex);
       keys.push({
         id: `m${midi}`,
         midi,
         pianoIndex,
         type: 'white',
         code,
-        label: pianoWhiteLabel(pianoIndex),
+        label: parts.letter,
+        octaveMark: parts.octaveMark,
+        octaveMarkKind: parts.octaveMarkKind,
         isMiddleC: midi === MIDDLE_C_MIDI,
         whiteIndex,
       });
@@ -281,7 +283,7 @@ export const KEY_BY_ID: Record<string, PianoKeyDef> = Object.fromEntries(
   PIANO_KEYBOARD.map((k) => [k.id, k]),
 );
 
-/** @deprecated 请优先用 KEY_BY_KEYCODE（webpage-piano 键位表） */
+/** @deprecated 请优先用 KEY_BY_KEYCODE */
 export const KEY_BY_CODE: Record<string, PianoKeyDef> = Object.fromEntries(
   PIANO_KEYBOARD.filter((k) => k.code).map((k) => [k.code, k]),
 );
@@ -290,7 +292,7 @@ export const KEY_BY_MIDI: Record<number, PianoKeyDef> = Object.fromEntries(
   PIANO_KEYBOARD.map((k) => [k.midi, k]),
 );
 
-/** keyCode → 琴键（webpage-piano 默认映射） */
+/** keyCode → 琴键 */
 export const KEY_BY_KEYCODE: Record<number, PianoKeyDef> = {};
 Object.entries(PC_KEYCODE_TO_PIANO).forEach(([kc, pianoIndex]) => {
   const def = KEY_BY_MIDI[pianoIndexToMidi(pianoIndex)];

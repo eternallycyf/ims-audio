@@ -54,7 +54,10 @@ export async function createPianoSampler(
   midiTo: number,
   onProgress?: (loaded: number, total: number) => void,
   existing?: Map<number, AudioBuffer>,
+  /** 主输出（用于全局音量）；默认 ctx.destination */
+  destination?: AudioNode,
 ): Promise<PianoSampler> {
+  const out = destination ?? ctx.destination;
   const buffers = existing ?? new Map<number, AudioBuffer>();
   const active: ActiveVoice[] = [];
   const midis: number[] = [];
@@ -82,11 +85,8 @@ export async function createPianoSampler(
     active.splice(0).forEach(({ source, gain }) => {
       try {
         gain.gain.cancelScheduledValues(now);
-        const v = Math.max(gain.gain.value, 0.0001);
-        gain.gain.setValueAtTime(v, now);
-        // 停止也走短余韵，避免咔哒一声
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-        source.stop(now + 0.14);
+        gain.gain.setValueAtTime(0, now);
+        source.stop(now);
       } catch {
         // already stopped
       }
@@ -96,12 +96,7 @@ export async function createPianoSampler(
   /**
    * @param durationSec 谱面音长（按键按住时间）；松键后仍会自然衰减
    */
-  const play = (
-    midi: number,
-    when = ctx.currentTime,
-    durationSec = 0.45,
-    gainScale = 1,
-  ) => {
+  const play = (midi: number, when = ctx.currentTime, durationSec = 0.45, gainScale = 1) => {
     const buffer = buffers.get(midi);
     if (!buffer) return;
 
@@ -109,14 +104,14 @@ export async function createPianoSampler(
     const gain = ctx.createGain();
     source.buffer = buffer;
     source.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(out);
 
     const t0 = Math.max(when, ctx.currentTime);
     const press = Math.max(0.06, durationSec);
     const release = releaseForMidi(midi);
-    // 峰值略低，叠音时不糊成一团；和弦再乘 gainScale
-    const peak = 0.48 * Math.max(0.2, gainScale);
-    const sustain = peak * 0.55;
+    // 峰值略超满幅，配合 master boost 补偿采样偏安静
+    const peak = 1.15 * Math.max(0.25, gainScale);
+    const sustain = peak * 0.62;
 
     // 快起 → 轻触衰减 → 按住 → 松键长余韵（像钢琴）
     gain.gain.setValueAtTime(0.0001, t0);

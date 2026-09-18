@@ -1,34 +1,55 @@
-export { default as Piano } from './components/Piano';
-export type { PianoProps } from './components/Piano';
+export { default as Piano, PianoPlayer } from './components/Piano';
+export type { PianoPlayerProps, PianoProps } from './components/Piano';
 export {
-  NOTE_MAP,
-  PIANO_KEYS,
-  PIANO_KEYBOARD,
-  WHITE_KEYS,
   BLACK_KEYS,
-  PIANO_MIDI_MIN,
-  PIANO_MIDI_MAX,
+  EXTRA_TRACKS,
   MIDDLE_C_MIDI,
+  NOTE_MAP,
+  PIANO_KEYBOARD,
+  PIANO_KEYS,
+  PIANO_MIDI_MAX,
+  PIANO_MIDI_MIN,
   SONG_FUJI,
   SONG_GRAPE,
   SONG_MEET,
   SONG_QINGTIAN,
+  SONG_TRACKS,
+  TRACK_BEIDUIBEI,
+  TRACK_DAODAI,
   TRACK_FUJI,
   TRACK_GRAPE,
+  TRACK_GUYONGZHE,
+  TRACK_KEXIMEIRUGUO,
+  TRACK_LANTINGXU,
   TRACK_MEET,
+  TRACK_PUGONGYING,
+  TRACK_QINGHUACI,
   TRACK_QINGTIAN,
-  SONG_TRACKS,
+  TRACK_SHANHUHAI,
+  TRACK_TASHUO,
+  TRACK_XIULIANAQING,
+  TRACK_YEQU,
+  TRACK_ZUIJIASUNYOU,
+  WHITE_KEYS,
+  createTrack,
+  createTrackFromNotes,
   foldNote,
   jianpuToMidi,
   midiToFreq,
+  parseKeyboardSheet,
+  parseSheet,
   resolveLyricAt,
   scorePitches,
+  trackDurationMs,
 } from './components/Piano/constants';
 export type {
-  ScoreNote,
-  PianoKeyDef,
   LyricLine,
+  ParseOptions,
+  PianoKeyDef,
+  ScoreNote,
+  SongMeta,
   SongTrack,
 } from './components/Piano/constants';
+export { formatTime, resolveCoverUrl } from './components/Piano/cover';
 export { usePianoAudio } from './components/Piano/usePianoAudio';
-export type { LyricUpdate } from './components/Piano/usePianoAudio';
+export type { LyricUpdate, ProgressUpdate } from './components/Piano/usePianoAudio';

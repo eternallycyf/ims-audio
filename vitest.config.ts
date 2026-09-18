@@ -10,6 +10,8 @@ export default defineConfig({
     setupFiles: './tests/test-setup.ts',
     environment: 'jsdom',
     globals: true,
+    // 避免 node_modules/.vite 被 root 占用后无法写 results.json
+    cache: false,
     alias: {
       '@': path.resolve(__dirname, './src'),
       [name]: path.resolve(__dirname, './src'),

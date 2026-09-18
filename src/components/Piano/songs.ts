@@ -1,29 +1,116 @@
 /**
  * 谱源说明（公开社区曲谱原样录入，仅供学习演示）
  *
- * 富士山下：https://www.bilibili.com/opus/858320570973945872（精编键盘谱，含和弦）
- * 晴天：https://www.everyonepiano.cn/zimupu-192.html（EOP 风物之诗琴字母谱）
+ * 富士山下：https://www.bilibili.com/opus/858320570973945872（精编键盘谱；苍强装饰谱不适用）
+ * 晴天 / 青花瓷 / 兰亭序：苍强有声视唱简谱（见 qingtianCangqiang / cangqiang/*）
+ * 孤勇者 / 可惜没如果 / 她说：简谱空间主旋律（cangqiang/* 同目录模块）
+ * 富士山下：B站精编字母谱；夜曲 / 蒲公英：EOP 原神琴学习谱
+ * 米游社无 `/` 字母谱：按「每字母 ≈ 八分音符」计时
  *
- * 字母 = 风物琴键位（Z–M / A–J / Q–U），直接对应 MIDI，不做简谱改编。
- * `/` 分拍；`(ABC)` 同时弹；空格分音组；`,` / `，` 气口。
+ * 字母谱：风物琴键位（Z–M / A–J / Q–U）；`/` 分拍；`(ABC)` 同时弹。
+ * melodyOnly：仅去掉括号和弦里的较低音（不改写八度）。
  */
 
-/** [MIDI | 同时发音的 MIDI[], 时值ms]，0 为休止 */
-export type ScoreNote = [number | number[], number];
+import { QINGTIAN_CANGQIANG_LYRICS, QINGTIAN_CANGQIANG_NOTES } from './qingtianCangqiang';
+
+/**
+ * [MIDI | 同时发音的 MIDI[], 推进时值 ms]
+ * 可选第三项 soundMs：发音时长（连音/延音常 > 推进时值）；省略则与推进相同。
+ * pitch 为 0 表示休止（不发音，仍推进时间）。
+ */
+export type ScoreNote = [number | number[], number] | [number | number[], number, number];
+
+/** 时间轴推进时长 */
+export function noteAdvanceMs(note: ScoreNote): number {
+  return note[1];
+}
+
+/** 实际发音时长（延音可超过推进） */
+export function noteSoundMs(note: ScoreNote): number {
+  return note[2] ?? note[1];
+}
 
 export type LyricLine = {
   time: number;
   text: string;
 };
 
-export type SongTrack = {
+/** 曲目元信息：可由外界注入，再经 createTrack 解析成可播放谱 */
+export type SongMeta = {
   id: string;
   title: string;
   artist: string;
   source: string;
-  notes: ScoreNote[];
-  lyrics: LyricLine[];
+  /** 专辑封面（CSS 渐变或图片 URL），瀑布流可选 */
+  cover?: string;
+  /** 副标题 / 来源简述 */
+  blurb?: string;
+  /** 瀑布流卡片高度提示 */
+  height?: number;
+  /**
+   * 苍强式 SVG 简谱（public 相对路径，如 sheets/qingtian.svg）。
+   * 有则优先展示 SVG，不再用字母/音名文本谱。
+   */
+  sheetSvg?: string;
 };
+
+export type SongTrack = SongMeta & {
+  notes: ScoreNote[];
+  /** @deprecated 保留字段兼容旧曲目；UI 改为展示 sheet */
+  lyrics: LyricLine[];
+  /** 展示用谱面（字母谱原文或音名行），静态展示、不高亮 */
+  sheet?: string;
+};
+
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
+
+/** MIDI → 音名（如 C4、F#5） */
+export function midiToNoteName(midi: number): string {
+  if (midi <= 0) return '-';
+  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
+}
+
+export function scorePitches(pitch: number | number[]): number[] {
+  if (Array.isArray(pitch)) return pitch.filter((m) => m > 0);
+  return pitch > 0 ? [pitch] : [];
+}
+
+/** 从原始字母谱抽出可展示行（去掉 L: 歌词与注释） */
+export function sheetDisplayText(sheet: string): string {
+  return sheet
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('L:') && !l.startsWith('#') && !l.startsWith('//'))
+    .join('\n');
+}
+
+/** 把已解析音符排成音名谱（无字母谱原文时用） */
+export function notesToSheet(notes: ScoreNote[], perLine = 8): string {
+  const tokens: string[] = [];
+  for (const note of notes) {
+    const midis = scorePitches(note[0]);
+    if (!midis.length) {
+      tokens.push('-');
+      continue;
+    }
+    tokens.push(
+      midis.length === 1 ? midiToNoteName(midis[0]) : `(${midis.map(midiToNoteName).join(' ')})`,
+    );
+  }
+  const lines: string[] = [];
+  for (let i = 0; i < tokens.length; i += perLine) {
+    lines.push(tokens.slice(i, i + perLine).join('  '));
+  }
+  return lines.join('\n');
+}
+
+/** 曲目用于面板展示的谱面文本 */
+export function trackSheetText(track: SongTrack | null | undefined): string {
+  if (!track) return '';
+  if (track.sheet?.trim()) return track.sheet.trim();
+  if (track.notes.length) return notesToSheet(track.notes);
+  return '';
+}
 
 /**
  * 风物之诗琴键 → MIDI（C 大调白键）
@@ -57,11 +144,6 @@ function midiOf(ch: string): number {
   return KEY_MIDI[ch.toLowerCase()] ?? 0;
 }
 
-export function scorePitches(pitch: number | number[]): number[] {
-  if (Array.isArray(pitch)) return pitch.filter((m) => m > 0);
-  return pitch > 0 ? [pitch] : [];
-}
-
 export type ParseOptions = {
   /** 一拍时长 ms（≈ 60000/BPM） */
   beatMs?: number;
@@ -69,6 +151,11 @@ export type ParseOptions = {
   groupBeats?: number;
   /** 逗号气口占几拍 */
   commaBeats?: number;
+  /**
+   * 只保留括号和弦中的最高音（不抬八度、不改顺序音）。
+   * 默认 false：原样弹谱，避免把整曲音高拧偏。
+   */
+  melodyOnly?: boolean;
 };
 
 type BeatToken =
@@ -82,9 +169,9 @@ function tokenizeBeat(raw: string): BeatToken[] {
   const re = /\(([^)]*)\)|\[([^\]]*)\]|([a-zA-Z]+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw))) {
-    if (m[1] != null) {
+    if (m[1] !== undefined) {
       tokens.push({ kind: 'chord', keys: m[1].replace(/[^a-zA-Z]/g, '') });
-    } else if (m[2] != null) {
+    } else if (m[2] !== undefined) {
       tokens.push({ kind: 'arp', keys: m[2].replace(/[^a-zA-Z]/g, '') });
     } else {
       tokens.push({ kind: 'seq', keys: m[3] });
@@ -103,6 +190,7 @@ export function parseKeyboardSheet(
   const beatMs = options.beatMs ?? 720;
   const groupBeats = options.groupBeats ?? 1;
   const commaBeats = options.commaBeats ?? 0.5;
+  const melodyOnly = options.melodyOnly ?? false;
   const groupMs = Math.floor(beatMs * groupBeats);
 
   const notes: ScoreNote[] = [];
@@ -116,10 +204,7 @@ export function parseKeyboardSheet(
     time += d;
   };
 
-  const pushEvents = (
-    events: { midis: number[]; weight: number }[],
-    durationMs: number,
-  ) => {
+  const pushEvents = (events: { midis: number[]; weight: number }[], durationMs: number) => {
     if (!events.length) {
       pushRest(durationMs);
       return;
@@ -132,8 +217,7 @@ export function parseKeyboardSheet(
           ? durationMs - used
           : Math.max(30, Math.floor((durationMs * ev.weight) / totalW));
       used += dur;
-      const pitch: number | number[] =
-        ev.midis.length > 1 ? ev.midis : ev.midis[0] ?? 0;
+      const pitch: number | number[] = ev.midis.length > 1 ? ev.midis : ev.midis[0] ?? 0;
       notes.push([pitch, dur]);
       time += dur;
     });
@@ -144,7 +228,13 @@ export function parseKeyboardSheet(
     for (const token of tokens) {
       if (token.kind === 'chord') {
         const midis = [...token.keys].map(midiOf).filter((m) => m > 0);
-        events.push({ midis: midis.length ? midis : [0], weight: 1 });
+        if (!midis.length) {
+          events.push({ midis: [0], weight: 1 });
+        } else if (melodyOnly) {
+          events.push({ midis: [Math.max(...midis)], weight: 1 });
+        } else {
+          events.push({ midis, weight: 1 });
+        }
       } else {
         // seq / arp：顺序弹；琶音权重要略轻以更快
         const w = token.kind === 'arp' ? 0.55 : 1;
@@ -177,8 +267,13 @@ export function parseKeyboardSheet(
     if (rawLine.startsWith('#') || rawLine.startsWith('//')) continue;
 
     const cleaned = rawLine
-      .replace(/[\u4e00-\u9fff：:]/g, '')
-      .replace(/，/g, ',');
+      .replace(/（/g, '(')
+      .replace(/）/g, ')')
+      .replace(/，/g, ',')
+      .replace(/；/g, ' ')
+      .replace(/[～~]+/g, '')
+      .replace(/-+/g, '')
+      .replace(/[\u4e00-\u9fff：:]/g, '');
     const hasSlash = cleaned.includes('/');
 
     if (hasSlash) {
@@ -188,29 +283,31 @@ export function parseKeyboardSheet(
         if (beat.includes(',')) {
           const parts = beat.split(',');
           for (let pi = 0; pi < parts.length; pi++) {
-            if (parts[pi].replace(/\s+/g, '')) pushBeatRaw(parts[pi], beatMs);
-            if (pi < parts.length - 1) pushRest(beatMs * commaBeats);
+            if (parts[pi].replace(/\s+/g, '')) pushBeatRaw(parts[pi], groupMs);
+            if (pi < parts.length - 1) pushRest(groupMs * commaBeats);
           }
           continue;
         }
         const compact = beat.replace(/\s+/g, '');
         if (!compact) {
-          if (bi > 0 && bi < beats.length - 1) pushRest(beatMs);
-          else if (bi === 0 && beats.length > 1) pushRest(beatMs);
+          if (bi > 0 && bi < beats.length - 1) pushRest(groupMs);
+          else if (bi === 0 && beats.length > 1) pushRest(groupMs);
           continue;
         }
-        pushBeatRaw(beat, beatMs);
+        pushBeatRaw(beat, groupMs);
       }
     } else {
-      // 无 / 的空格谱：空格分音组；括号仍作和弦
+      // 无 / 的空格谱（米游社常见）：逗号/空格分段；每字母按一拍（更接近原曲时长）
+      const letterMs = Math.max(160, groupMs);
       const chunks = cleaned.split(/(\s+|,)/).filter((t) => t.length);
       for (const chunk of chunks) {
         if (chunk === ',') {
-          pushRest(beatMs * commaBeats);
+          pushRest(Math.floor(groupMs * commaBeats));
           continue;
         }
         if (/^\s+$/.test(chunk)) continue;
-        pushBeatRaw(chunk, groupMs);
+        const letterCount = (chunk.match(/[a-zA-Z]/g) || []).length || 1;
+        pushBeatRaw(chunk, letterCount * letterMs);
       }
     }
   }
@@ -218,7 +315,9 @@ export function parseKeyboardSheet(
   return { notes, lyrics };
 }
 
-/** 按「发声音符时值」推进歌词字，而不是整句匀速切分 */
+/**
+ * 按歌词时间戳定位行；行内按「发声音符」顺序逐字高亮（更接近网易云逐字感）。
+ */
 export function resolveLyricAt(
   track: SongTrack,
   elapsedMs: number,
@@ -239,11 +338,11 @@ export function resolveLyricAt(
   if (!chars.length) return { lineIndex, charIndex: -1 };
 
   let t = 0;
-  const segs: { start: number; dur: number }[] = [];
+  const segs: { start: number; end: number }[] = [];
   for (const [pitch, dur] of notes) {
     const sounding = scorePitches(pitch).length > 0;
     if (sounding && t >= line.time && t < lineEnd) {
-      segs.push({ start: t, dur });
+      segs.push({ start: t, end: t + dur });
     }
     t += dur;
     if (t >= lineEnd && segs.length) break;
@@ -252,25 +351,43 @@ export function resolveLyricAt(
   if (!segs.length) return { lineIndex, charIndex: 0 };
   if (elapsedMs < segs[0].start) return { lineIndex, charIndex: 0 };
 
-  const total = segs.reduce((s, e) => s + e.dur, 0) || 1;
-  let acc = 0;
-  let charIndex = 0;
-  for (const seg of segs) {
-    if (elapsedMs < seg.start + seg.dur) {
-      charIndex = Math.min(chars.length - 1, Math.floor((acc / total) * chars.length));
-      return { lineIndex, charIndex };
+  for (let i = 0; i < segs.length; i++) {
+    if (elapsedMs < segs[i].end) {
+      // 第 i 个发声音对应第 i 个字（超出则落在最后一字）
+      return { lineIndex, charIndex: Math.min(chars.length - 1, i) };
     }
-    acc += seg.dur;
-    charIndex = Math.min(chars.length - 1, Math.floor((acc / total) * chars.length));
   }
   return { lineIndex, charIndex: chars.length - 1 };
 }
 
-function buildTrack(
-  meta: Omit<SongTrack, 'notes' | 'lyrics'>,
-  parsed: { notes: ScoreNote[]; lyrics: LyricLine[] },
+/** 曲目总时长 */
+export function trackDurationMs(track: SongTrack | ScoreNote[]): number {
+  const notes = Array.isArray(track) ? track : track.notes;
+  return notes.reduce((s, [, d]) => s + d, 0);
+}
+
+/**
+ * 把字母键盘谱解析成可播放曲目（供包外注入）。
+ * @example
+ * createTrack({ id, title, artist, source }, sheet, { beatMs: 720, melodyOnly: true })
+ */
+export function createTrack(meta: SongMeta, sheet: string, options: ParseOptions = {}): SongTrack {
+  const parsed = parseKeyboardSheet(sheet, options);
+  return {
+    ...meta,
+    notes: parsed.notes,
+    lyrics: parsed.lyrics,
+    sheet: sheetDisplayText(sheet),
+  };
+}
+
+/** 直接注入已解析的 MIDI 音符（如从苍强简谱导出） */
+export function createTrackFromNotes(
+  meta: SongMeta,
+  notes: ScoreNote[],
+  lyrics: LyricLine[] = [],
 ): SongTrack {
-  return { ...meta, notes: parsed.notes, lyrics: parsed.lyrics };
+  return { ...meta, notes, lyrics, sheet: notesToSheet(notes) };
 }
 
 /**
@@ -347,145 +464,38 @@ L:♪
 (VAFH) G / G /H G /D G / (BSGE) W/ Q /H Q/ W / (ZQ) B /A S /D / / Z / / / /
 `;
 
-/**
- * 晴天 · EOP 原神风物之诗琴字母谱（周杰伦）
- * https://www.everyonepiano.cn/zimupu-192.html
- * 拍线 `/` + `( )` 和弦，与富士山下同格式；非米游社简谱改编
- * 原谱标注 四分音符≈68 → beatMs≈880
- */
-const QINGTIAN_SHEET = `
-# 前奏
-L:♪
-N A /G A /V B N /G A /
-Z B /G A /A G /M G /
-N A /G A /V B N /G A /
-Z B /G A /A G /M G /
-N (AT) /(GT) (AQ) /(VQ) B N /(GW) (AE) /
-Z (BT) /(GT) (AQ) /(AQ) (GW) E /(MW) Q G /
-N (AT) /(GT) (AQ) /(VQ) B N /(GW) (AE) /
-Z (BE) /G (AE) /(AR) E (GW) R /(ME) W (GQ) /
-(NG) (AQ) /(GQ) (AE) /(VR) (BE) N /(GW) (AQ) W /
-(ZE) (BE) /(GE) (AE) /(AW) E (GW) Q /(MQ) G /
-(NG) (AQ) /(GQ) (AE) /(VR) (BE) N /(GW) (AQ) W /
-(ZE) (BE) /(GE) (AE) /(AW) E (GW) Q /(MQ) G Q /
-N Q (AQ) Q /(GJ) Q A Q /V Q (AQ) Q /(GJ) Q A Q /
-Z Q (BQ) Q /(GJ) Q A Q /A Q (GQ) Q /(MT) T G T /
-N T (AT) T /(GT) T A T /V T (AT) T /(GT) R (AE) W E /
-Z B /G A /A G /(MW) Q (GJ) Q /
-(NH) (AJ) /(GQ) (AT) /(VR) (AE) /(GQ) (AQ) /
-Z B /G A /(AQ) Q (GQ) Q /(ME) (GQ) /
-(NH) (AJ) /(GQ) (AT) /(VR) (AE) /(GQ) A W /
-B S /G S /(BSGJ) /
-
-# 主歌一
-L:故事的小黄花从出生那年就飘着
-(ZD) (BS) /(AF) (BD) /C (BA) /(AG) (BJ) /
-L:童年的荡秋千随记忆一直晃到现在
-(NQ) (CJ) /(AG) (CA) /N (CA) /(BH) (MH) /
-L:Re so so si do si la
-V (NH) /(AG) (NG) /B (MG) /(SF) (MD) /
-L:So la si si si si la si la so
-(ZS) (BD) /(AF) (BD) /S B /D B /
-L:吹着前奏望着天空我想起花瓣试着掉落
-(CD) B /(MG) B G /M (BG) /(MH) (BJ) /
-(NW) (CJ) /(AQ) (DQ) /B C /A (DQ) /
-
-# 预副歌一
-L:为你翘课的那一天花落的那一天
-(VQ) (AG) /(DG) (AH) /(VG) (ZF) /(NS) (ZD) /
-L:教室的那一间我怎么看不见
-(BF) (XG) /(MH) (XA) /(BH) X J /(MJ) X /
-L:消失的下雨天我好想再淋一遍
-(ZD) (BS) /(AF) (BD) /C (BA) /(AG) (BJ) /
-L:没想到失去的勇气我还留着
-(NQ) (CJ) /(AG) (CA) /N (CA) /(BH) (MH) /
-L:好想再问一遍你会等待还是离开
-V (NH) /(AG) (NG) /B (MG) /(SF) (MD) /
-(ZS) (BD) /(AF) (BD) /S B /D B /
-(CD) B /(MG) B G /M (BG) /(MH) (BJ) /
-(NW) (CJ) /(AQ) (DQ) /B C /A (DQ) /
-(VQ) (AG) /(DG) (AH) /(VG) (ZF) /(VN) (ZM) /
-(BA) (XS) /(MD) X S /(XB) /D A /
-
-# 间奏
-L:♪
-Z B /(AS) B (AS) /(AS) B /(AS) B (AS) /
-V N /(AD) N (AD) /(AD) N /(AD) N (AD) /
-X N /(AF) N (AF) /(AF) N /(AF) N (AF) /
-V N /(AD) N (BS) /S B /S B Q /
-N Q (AQ) Q /(GJ) Q A Q /V Q (AQ) Q /(GJ) Q A Q /
-Z Q (BQ) Q /(GJ) Q A Q /A Q (GQ) Q /(MT) T G T /
-N T (AT) T /(GT) T A T /V T (AT) T /(GT) R (AE) W E /
-Z B /G A /A G /(MW) Q (GJ) Q /
-(NH) (AJ) /(GQ) (AT) /(VR) (AE) /(GQ) A Q /
-Z B /G A /(AQ) Q (GQ) Q /(ME) (GQ) /
-(NH) (AJ) /(GQ) (AT) /(VR) (AE) /(GQ) A W /
-B S /(GJ) B /J S /G B /
-
-# 副歌一
-L:刮风这天我试过握着你手
-(ZD) (BS) /(AF) (BD) /C (BA) /(AG) (BJ) /
-L:但偏偏雨渐渐大到我看你不见
-(NQ) (CJ) /(AG) (CA) /N (CA) /(BH) (MH) /
-L:还要多久我才能在你身边
-V (NH) /(AG) (NG) /B (MG) /(SF) (MD) /
-L:等到放晴的那天也许我会比较好一点
-(ZS) (BD) /(AF) (BD) /S B /D B /
-(CD) B /(MG) B G /M (BG) /(MH) (BJ) /
-(NW) (CJ) /(AQ) (DQ) /B C /A (DQ) /
-
-L:从前从前有个人爱你很久
-(VQ) (AG) /(DG) (AH) /(VG) (ZF) /(NS) (ZD) /
-L:但偏偏风渐渐把距离吹得好远
-(BF) (XG) /(MH) (XA) /(BH) X J /(MJ) X /
-L:好不容易又能再多爱一天
-(ZD) (BS) /(AF) (BD) /C (BA) /(AG) (BJ) /
-L:但故事的最后你好像还是说了拜拜
-(NQ) (CJ) /(AG) (CA) /N (CA) /(BH) (MH) /
-V (NH) /(AG) (NG) /B (MG) /(SF) (MD) /
-(ZS) (BD) /(AF) (BD) /S B /D B /
-(CD) B /(MG) B G /M (BG) /(MH) (BJ) /
-(NW) (CJ) /(AQ) (DQ) /B C /A (DQ) /
-(VQ) (AG) /(DG) (AH) /(VG) (ZF) /(VN) (ZM) /
-(BA) (XS) /(MD) X S /(XB) /D A Q /
-
-# 结尾
-L:♪
-(ZQ) Q (BQ) /(AQ) Q B /(SQ) Q (BQ) Q /D Q (BQ) Q /
-V Q (AQ) Q /S Q (AQ) Q /(DQ) Q (AQ) Q /G (AQ) Q /
-(XQ) (NQ) /(SQ) Q (NQ) Q /(DQ) Q (NQ) Q /G (NQ) Q /
-(VQ) Q (AQ) Q /G Q (AQ) Q /(BQ) Q (SQ) Q /(GQ) Q S Q /
-(ZQ) Q (BQ) /(AQ) Q (BQ) /(SQ) Q (BQ) Q /D Q (BQ) Q /
-V Q (AQ) Q /S Q (AQ) Q /(DQ) Q (AQ) Q /G Q (AQ) Q /
-(XQ) (NQ) /(SQ) Q N /(DQ) Q (NQ) Q /G Q (NQ) Q /
-(VQ) Q (AQ) Q /(GQ) Q (AQ) Q /(BQ) Q (SQ) /G S /
-`;
-
-export const TRACK_FUJI = buildTrack(
+export const TRACK_FUJI = createTrack(
   {
     id: 'fuji',
     title: '富士山下',
     artist: '陈奕迅',
     source: 'https://www.bilibili.com/opus/858320570973945872',
+    cover: 'covers/fuji.jpg',
+    blurb: '陈奕迅 · B站精编',
+    height: 320,
   },
-  parseKeyboardSheet(FUJI_SHEET, { beatMs: 780, groupBeats: 1, commaBeats: 0.5 }),
+  FUJI_SHEET,
+  { beatMs: 780, groupBeats: 1, commaBeats: 0.5, melodyOnly: false },
 );
 
-export const TRACK_QINGTIAN = buildTrack(
+export const TRACK_QINGTIAN = createTrackFromNotes(
   {
     id: 'qingtian',
     title: '晴天',
     artist: '周杰伦',
-    source: 'https://www.everyonepiano.cn/zimupu-192.html',
+    source: 'https://www.cangqiang.com.cn/bofang/5925.html',
+    cover: 'covers/qingtian.jpg',
+    blurb: '周杰伦 · 苍强有声简谱',
+    height: 210,
+    sheetSvg: 'sheets/qingtian.svg',
   },
-  parseKeyboardSheet(QINGTIAN_SHEET, { beatMs: 880, groupBeats: 1, commaBeats: 0.5 }),
+  QINGTIAN_CANGQIANG_NOTES,
+  QINGTIAN_CANGQIANG_LYRICS,
 );
 
 /** @deprecated 已替换为 TRACK_QINGTIAN */
 export const TRACK_MEET = TRACK_QINGTIAN;
 /** @deprecated 已替换为 TRACK_QINGTIAN */
 export const TRACK_GRAPE = TRACK_QINGTIAN;
-
-export const SONG_TRACKS = [TRACK_FUJI, TRACK_QINGTIAN] as const;
 
 export { parseKeyboardSheet as parseSheet };

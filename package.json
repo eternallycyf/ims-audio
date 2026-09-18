@@ -40,7 +40,7 @@
     "dev": "dumi dev",
     "docs:build": "dumi build",
     "docs:preview": "yarn docs:build && cd dist && npx serve",
-    "doctor": "father doctor",
+    "doctor": "node ./scripts/run-doctor.mjs",
     "lint": "eslint \"{src,test}/**/*.{js,jsx,ts,tsx}\"",
     "prepare": "husky install && npm run setup",
     "prepublishOnly": "npm run doctor && npm run build",
@@ -49,7 +49,7 @@
     "semantic-release": "semantic-release",
     "setup": "dumi setup",
     "start": "dumi dev",
-    "test": "vitest --passWithNoTests",
+    "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "test:update": "vitest -u",
     "type-check": "tsc -p tsconfig-check.json"
@@ -81,7 +81,7 @@
     "@types/react-dom": "^18.2.0",
     "@umijs/lint": "^4",
     "@vitest/coverage-v8": "^1.x",
-    "antd": "^5.9.4",
+    "antd": "^6.6.4",
     "babel-plugin-add-module-exports": "^1",
     "babel-plugin-antd-style": "^1.0.4",
     "commitlint": "^17",
@@ -110,6 +110,8 @@
     "vitest": "^1.x"
   },
   "peerDependencies": {
+    "@ant-design/icons": ">=5.0.0",
+    "antd": ">=5.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
