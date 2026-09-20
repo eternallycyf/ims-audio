@@ -83,7 +83,7 @@ importers:
         version: 8.0.3
       ims-template-config:
         specifier: latest
-        version: 1.27.0(@ant-design/icons@5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(antd@6.6.4(date-fns@2.30.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lodash@4.18.1)
+        version: 1.28.1(@ant-design/icons@5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(antd@6.6.4(date-fns@2.30.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lodash@4.18.1)
       jsdom:
         specifier: ^22
         version: 22.1.0
@@ -2548,6 +2548,9 @@ packages:
 
   '@types/node@26.6.1':
     resolution: {integrity: sha512-VqGJBMCtdhqkBUCcBLvywI0NJ+KLuVzgNnlBUNFOQjqVxzo2lxLUNg1DSey8+u2u6ktswSAxg+s68QLzWHNOuA==}
+
+  '@types/node@26.6.2':
+    resolution: {integrity: sha512-X1P21scMv4zGKLYqjdGjaKa7COa0RKVYYZZN/NfvLQ1JegxFhdhpZG/Lyn8AXx6CDUavKAd11v6BvfpkDByK8g==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -5202,8 +5205,9 @@ packages:
     resolution: {integrity: sha512-rKtvo6a868b5Hu3heneU+L4yEQ4jYKLtjpnPeUdK7h0yzXGmyBTypknlkCvHFBqfX9YlorEiMM6Dnq/5atfHkw==}
     engines: {node: '>=8'}
 
-  ims-template-config@1.27.0:
-    resolution: {integrity: sha512-CkDKAgLQfZutJmTWHhhTuCVevVKpUxL6GowFQaTLq1ttf7HT961Y/C8LdNfX+w5+mcYMjnXvoh6z+nYZqnhLcw==}
+  ims-template-config@1.28.1:
+    resolution: {integrity: sha512-q755RFct2D6NkA5uRnjUR79FyZS2V60T6KnBih8TGfPtnOeMQF8Ge1vcLEHczFZxqwgPsJnTz5shalznxn4YBA==}
+    engines: {node: 24.x}
     peerDependencies:
       '@ant-design/icons': ^5.2.6
       antd: ^5.9.4
@@ -6283,8 +6287,8 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  minimizer-webpack-plugin@5.10.1:
-    resolution: {integrity: sha512-+dsZEyTcy1lkq41lxdiOqvb26gXbYGgwY+30w37f9PqUVkuEBejBLDotsHOTjuga9xJyGLW2DqzKDUyJ4W/PMQ==}
+  minimizer-webpack-plugin@5.11.0:
+    resolution: {integrity: sha512-2JVy2DY+iBtfRyrQB5cRM7lfurnJIi6jFTgLip/7FxDu0WxswrIRzr4fBySQ0X7HqM7BcwE28zm+HfQ5V6y4Cg==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
       '@minify-html/node': '*'
@@ -11812,6 +11816,10 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
+  '@types/node@26.6.2':
+    dependencies:
+      undici-types: 8.9.0
+
   '@types/normalize-package-data@2.4.4': {}
 
   '@types/parse-json@4.0.2': {}
@@ -15737,7 +15745,7 @@ snapshots:
 
   import-lazy@4.0.0: {}
 
-  ims-template-config@1.27.0(@ant-design/icons@5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(antd@6.6.4(date-fns@2.30.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lodash@4.18.1):
+  ims-template-config@1.28.1(@ant-design/icons@5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(antd@6.6.4(date-fns@2.30.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lodash@4.18.1):
     dependencies:
       '@ant-design/icons': 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@babel/runtime': 7.29.7
@@ -16136,7 +16144,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.6.1
+      '@types/node': 26.6.2
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -17039,7 +17047,7 @@ snapshots:
 
   minimist@1.2.8: {}
 
-  minimizer-webpack-plugin@5.10.1(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28)(webpack@5.111.0(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28)):
+  minimizer-webpack-plugin@5.11.0(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28)(webpack@5.111.0(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
@@ -20187,7 +20195,7 @@ snapshots:
       events: 3.3.0
       graceful-fs: 4.2.11
       mime-db: 1.54.0
-      minimizer-webpack-plugin: 5.10.1(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28)(webpack@5.111.0(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28))
+      minimizer-webpack-plugin: 5.11.0(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28)(webpack@5.111.0(@swc/core@1.9.2(@swc/helpers@0.5.15))(lightningcss@1.22.1)(postcss@8.5.28))
       schema-utils: 4.5.0
       tapable: 2.3.3
       watchpack: 2.5.2
